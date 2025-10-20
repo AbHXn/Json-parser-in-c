@@ -74,6 +74,7 @@ bool push_buffer(const char* buf){
 	}
 	return true;
 }
+
 char _fgetc(){
 	return (buffer_ptr > -1) ? BUFFER[buffer_ptr--]: fgetc(JSON_FILE);
 }
@@ -131,6 +132,7 @@ bool is_json_syntax(char c){
 	(c == CLOSE_S) || (c == COMMA);
 }
 
+// insertion at end single linked list
 void add_child_to_parent(Node* parent, Node *child){
 	ChD *new_child = (ChD *) malloc(sizeof(ChD));
 	if(new_child == NULL){
@@ -149,6 +151,7 @@ void add_child_to_parent(Node* parent, Node *child){
 	}
 }
 
+// displaying treeeeeee
 void traverse_tree(Node *root, char *space, int index){
 	if(root){
 		printf("%s => %s : %s\n", space, root->key, root->value);
@@ -164,72 +167,109 @@ void traverse_tree(Node *root, char *space, int index){
 		}
 	}
 }
+
+// in _flag last 4 bits represents 4 different flags
+// 0001 -> inputing keys or values 
+// 0100 -> keys entered but not values
+// 0101 -> keys entered now values is inputing
 void recursivily_build(Node *parent, int _flag){
 	char key[MAX_KEY_SIZE], value[MAX_VALUE_SIZE];
-	int list_index = 0;
+	int list_index = 0; // for list cases
 	int k_index, v_index, c;
+	
 	k_index = v_index = 0;
-
 	Node *node_to_push = NULL;
 
 	while((c = _fgetc()) != EOF){
 		if(c == CLOSE_C || c == CLOSE_S){
+			// in list last value does not seperate with comma
 			if(c == CLOSE_S)
 				c = COMMA;
+			// just checking if next is comma or not
 			int temp = _fgetc();
+			// if not comma then put comma to trigger
 			push_char_buffer(temp);
 			if(temp != COMMA) // comma trigerring
 				push_char_buffer(COMMA);
+			// put eof to break the loop
 			push_char_buffer(EOF);
+			// check if value is in write mode
+			// if it is then change the mode
 			if(is_key_filled(_flag) && is_value_filling(_flag)){
 				_flag = turn_on_off(_flag, 1);
 				_flag = turn_on_off(_flag, 0);
 				value[v_index] = '\0';
 			}
 		}
+		// if it is not a json syntax
 		if(!is_json_syntax(c)){
+			// i am skiping space case...
 			if(isspace(c)) continue;
+			//if not space then it will be a key or value
+			// fill accordinly 
 			if(!is_filling_mode(_flag))
 				_flag = turn_on_off(_flag, 0);
+			// if key is not filled then fill the key first
 			if(!is_key_filled(_flag))
 				key[k_index++] = c;
+			// else fill the value
 			else if(!is_value_filled(_flag)){
 				value[v_index++] = c;
 			}
 		}
+		// this is the case where the key_value mode is created
+		// that why i use 'APPO TRIGGERING'
+		// APPO represents the end of key or value
 		else if(c == APPO){
+			// if not in filling mode then change it.
 			if(!is_filling_mode(_flag))
 				_flag = turn_on_off(_flag, 0);
 			else{
+				// it it is in filling mode and..
+				// if key is not filled then key is filled completely
+				// turn off the filling flag..
 				if(!is_key_filled(_flag)){
 					key[k_index] = '\0';
 					_flag = turn_on_off(_flag, 2);
 					_flag = turn_on_off(_flag, 0);	
-				}else{
+				}// if key is filled that means value is filling...
+				// change the flag.... 
+				else{
 					value[v_index] = '\0';
 					_flag = turn_on_off(_flag, 1);
 					_flag = turn_on_off(_flag, 0);
 				}
 			}
 		}
+		// if its a json syntanx other than closing or appo
 		else if(is_json_syntax(c)){
+			// if it is an opening curly then value of key will be another tree
 			if(c == OPEN_C){
+				// create sepereately by recursively
 				if(is_key_filled(_flag)){
 					Node *new_node = get_new_node(key, NULL);
 					recursivily_build(new_node, 0b0000);
 					node_to_push = new_node;
 				}
 			}
+			// if it is opening square (LIST) index will become key/
 			else if(c == OPEN_S){
+				// convert index number into digit
 				char index_to_key[MAX_KEY_SIZE];
 				sprintf(index_to_key, "%d", list_index);
 				Node *key_node = NULL;
+				// get the key_node
 				key_node = get_new_node(key, NULL);					
 				push_char_buffer('"');
+				// remember it will be in reverse order...  ****************************************************** 
 				push_buffer(index_to_key);
 				recursivily_build(key_node, 0b1001);
 				node_to_push = key_node;
+				// update node to push
 			}
+			// COMMA represents the final stage. key and value is ready
+			// but there is some cases comma is not important 
+			// so checking it
 			else if(c == COMMA){
 				if(is_filling_mode(_flag)){
 					_flag = turn_on_off(_flag, 1);
@@ -240,7 +280,7 @@ void recursivily_build(Node *parent, int _flag){
 					add_child_to_parent(parent, node_to_push);
 					node_to_push = NULL;
 					k_index = v_index = 0;
-					_flag = (is_list(_flag)) ? 0b1001: 0b0000;
+					_flag = (is_list(_flag)) ? 0b1001: 0b0000; 
 				}
 				if(is_list(_flag)){
 					list_index += 1;
@@ -251,6 +291,8 @@ void recursivily_build(Node *parent, int _flag){
 				}
 			}
 		}
+		// at finaly key_value mode is achieved then 
+		// it is the time to push to parent node
 		if(is_value_pair(_flag)){
 			if(is_list(_flag) && c != COMMA)
 				continue;
