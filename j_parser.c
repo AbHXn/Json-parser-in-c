@@ -261,7 +261,6 @@ void recursivily_build(Node *parent, int _flag){
 				// get the key_node
 				key_node = get_new_node(key, NULL);					
 				push_char_buffer('"');
-				// remember it will be in reverse order...  ****************************************************** 
 				push_buffer(index_to_key);
 				recursivily_build(key_node, 0b1001);
 				node_to_push = key_node;
