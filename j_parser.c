@@ -30,7 +30,7 @@
 #define MAX_VALUE_SIZE 250
 #define INDEX_KEY_LEN 250
 #define BUFFER_SIZE 500
-#define MAX_SPACE 25
+#define MAX_SPACE 100
 
 typedef enum _j_syntax{
 	OPEN_C = '{',
@@ -151,21 +151,26 @@ void add_child_to_parent(Node* parent, Node *child){
 	}
 }
 
-// displaying treeeeeee
-void traverse_tree(Node *root, char *space, int index){
-	if(root){
-		printf("%s => %s : %s\n", space, root->key, root->value);
-		ChD* child = root->childrens;
-		while(child){
-			if(child->child){
-				if(index + 5 < MAX_SPACE)
-					strcat(space, "     ");
-				traverse_tree(child->child, space, index + 5);
-				space[index - 5] = '\0';
-			}
-			child = child->next;
-		}
-	}
+// more attractive method of printing a tree
+void traverse_tree(Node *root, char *prefix, int is_last) {
+    if (root) {
+        printf("%s%s%s : %s\n", prefix, is_last ? "└── " : "├── ", root->key, root->value ? root->value : "/");
+        char new_prefix[MAX_SPACE];
+        snprintf(new_prefix, MAX_SPACE, "%s%s", prefix, is_last ? "    " : "│   ");
+        int count = 0;
+        ChD *tmp = root->childrens;
+        while (tmp) {
+            count++;
+            tmp = tmp->next;
+        }
+        ChD *child = root->childrens;
+        int i = 0;
+        while (child) {
+            traverse_tree(child->child, new_prefix, i == count - 1);
+            child = child->next;
+            i++;
+        }
+    }
 }
 
 // in _flag last 4 bits represents 4 different flags
@@ -204,7 +209,7 @@ void recursivily_build(Node *parent, int _flag){
 		// if it is not a json syntax
 		if(!is_json_syntax(c)){
 			// i am skiping space case...
-			if(isspace(c)) continue;
+			if(isspace(c) && !is_filling_mode(_flag)) continue;
 			//if not space then it will be a key or value
 			// fill accordinly 
 			if(!is_filling_mode(_flag))
@@ -243,7 +248,11 @@ void recursivily_build(Node *parent, int _flag){
 		}
 		// if its a json syntanx other than closing or appo
 		else if(is_json_syntax(c)){
-			// if it is an opening curly then value of key will be another tree
+			// if we encounter semi but it is a part of value then skip it
+			if(c == SEMI && is_value_filling(_flag)){
+				value[v_index++] = c;
+				continue;
+			}
 			if(c == OPEN_C){
 				// create sepereately by recursively
 				if(is_key_filled(_flag)){
@@ -258,6 +267,11 @@ void recursivily_build(Node *parent, int _flag){
 				char index_to_key[MAX_KEY_SIZE];
 				sprintf(index_to_key, "%d", list_index);
 				Node *key_node = NULL;
+				// if key is not filled and not currently filling then 
+				// high chance it is a list
+				if(!is_key_filled(_flag) && !is_filling_mode(_flag)){
+					strcpy(key, "LIST");
+				}
 				// get the key_node
 				key_node = get_new_node(key, NULL);					
 				push_char_buffer('"');
