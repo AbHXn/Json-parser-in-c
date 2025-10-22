@@ -156,7 +156,7 @@ void add_child_to_parent(Node* parent, Node *child){
 	}
 }
 
-// more attractive method of printing a tree
+// beautiful method for printing a treeeeee :) ! 
 void traverse_tree(Node *root, char *prefix, int is_last) {
     if (root) {
         printf("%s%s%s : %s\n", prefix, is_last ? "└── " : "├── ", root->key, root->value ? root->value : "/");
@@ -341,6 +341,25 @@ void recursivily_build(Node *parent, int _flag){
 	}
 }
 
+// it is better to free entire tree \
+// after execution to prevent mem leak
+void free_entire_tree(Node *root){
+	if(root != NULL){
+		ChD* children = root->childrens;
+		while(children != NULL){
+			ChD *next = children->next;
+			free_entire_tree(children->child);
+			// childrens allocated seperate mem so free it.
+			free(children);
+			children = next;
+		}
+		free(root->key);
+		free(root->value);
+		root->childrens = NULL;
+		free(root);
+	}
+}
+
 int main(int argc, char *argv[]){
 	if(argc != 2){
 		fprintf(stderr, "Provide json file\n");
@@ -358,5 +377,6 @@ int main(int argc, char *argv[]){
 		puts("\n*******************END*******************");
 	}
 	fclose(JSON_FILE);
+	free_entire_tree(root);
 	return 0;
 }
