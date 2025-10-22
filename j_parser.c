@@ -25,11 +25,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #define MAX_KEY_SIZE 250
-#define MAX_VALUE_SIZE 250
-#define INDEX_KEY_LEN 250
-#define BUFFER_SIZE 500
+#define MAX_VALUE_SIZE 1024
+#define INDEX_KEY_LEN 10
+#define BUFFER_SIZE 250
 #define MAX_SPACE 100
 
 typedef enum _j_syntax{
@@ -52,16 +53,20 @@ typedef struct _node{
 	ChD *childrens;
 }Node;
 
-char BUFFER[BUFFER_SIZE];
+// why buffer is an int? because of EOF (-1)
+int BUFFER[BUFFER_SIZE];
 int buffer_ptr = -1;
 FILE* JSON_FILE = NULL;
 
-bool push_char_buffer(const char c){
-	if(buffer_ptr + 1 >= BUFFER_SIZE)
+bool push_char_buffer(const int c){
+	if(buffer_ptr + 1 >= BUFFER_SIZE){
+		fprintf(stderr, "failed to push char buffer\n");
 		return false;
+	}
+	// else push the char to buffer stack
 	BUFFER[++buffer_ptr] = c;
 }
-
+// another option is top push a string
 bool push_buffer(const char* buf){
 	int buff_len = strlen(buf);
 	if(buffer_ptr + buff_len >= BUFFER_SIZE){
@@ -74,7 +79,7 @@ bool push_buffer(const char* buf){
 	}
 	return true;
 }
-
+// if buffer is not empty then return the value
 char _fgetc(){
 	return (buffer_ptr > -1) ? BUFFER[buffer_ptr--]: fgetc(JSON_FILE);
 }
@@ -215,15 +220,21 @@ void recursivily_build(Node *parent, int _flag){
 			if(!is_filling_mode(_flag))
 				_flag = turn_on_off(_flag, 0);
 			// if key is not filled then fill the key first
-			if(!is_key_filled(_flag))
-				key[k_index++] = c;
+			if(!is_key_filled(_flag)){
+				// if k_index reached its limit
+				if(k_index == MAX_KEY_SIZE - 1){
+					key[k_index] = '\0';
+				} else key[k_index++] = c;
+			}
 			// else fill the value
 			else if(!is_value_filled(_flag)){
-				value[v_index++] = c;
+				// if v_index reached its limit
+				if(v_index == MAX_VALUE_SIZE - 1){
+					value[v_index] = '\0';
+				}else value[v_index++] = c;
 			}
 		}
 		// this is the case where the key_value mode is created
-		// that why i use 'APPO TRIGGERING'
 		// APPO represents the end of key or value
 		else if(c == APPO){
 			// if not in filling mode then change it.
@@ -250,15 +261,23 @@ void recursivily_build(Node *parent, int _flag){
 		else if(is_json_syntax(c)){
 			// if we encounter semi but it is a part of value then skip it
 			if(c == SEMI && is_value_filling(_flag)){
-				value[v_index++] = c;
+				// also check if value reached its limit
+				if(v_index == MAX_VALUE_SIZE - 1){
+					value[v_index] = '\0';
+				}else value[v_index++] = c;
 				continue;
 			}
 			if(c == OPEN_C){
 				// create sepereately by recursively
 				if(is_key_filled(_flag)){
 					Node *new_node = get_new_node(key, NULL);
-					recursivily_build(new_node, 0b0000);
-					node_to_push = new_node;
+					// if we failed to create new node then break the loop
+					if(!new_node){
+						push_char_buffer(EOF);
+					}else{
+						recursivily_build(new_node, 0b0000);
+						node_to_push = new_node;
+					}
 				}
 			}
 			// if it is opening square (LIST) index will become key/
@@ -273,12 +292,15 @@ void recursivily_build(Node *parent, int _flag){
 					strcpy(key, "LIST");
 				}
 				// get the key_node
-				key_node = get_new_node(key, NULL);					
-				push_char_buffer('"');
-				push_buffer(index_to_key);
-				recursivily_build(key_node, 0b1001);
-				node_to_push = key_node;
-				// update node to push
+				key_node = get_new_node(key, NULL);	
+				if(!key_node){
+					push_char_buffer(EOF);
+				}else{
+					push_char_buffer('"');
+					push_buffer(index_to_key);
+					recursivily_build(key_node, 0b1001);
+					node_to_push = key_node;
+				}
 			}
 			// COMMA represents the final stage. key and value is ready
 			// but there is some cases comma is not important 
@@ -310,6 +332,7 @@ void recursivily_build(Node *parent, int _flag){
 			if(is_list(_flag) && c != COMMA)
 				continue;
 			Node* new_node = get_new_node(key, value);
+			if(!new_node) break;
 			add_child_to_parent(parent, new_node);
 			k_index = v_index = 0;
 			_flag = (is_list(_flag)) ? 0b1001: 0b0000;
