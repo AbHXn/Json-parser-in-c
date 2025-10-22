@@ -377,6 +377,6 @@ int main(int argc, char *argv[]){
 		puts("\n*******************END*******************");
 	}
 	fclose(JSON_FILE);
-	free_entire_tree(root);
+	free_entire_tree(parent);
 	return 0;
 }
