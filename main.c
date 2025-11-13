@@ -31,18 +31,17 @@ int main( int argc, char *argv[] ){
 		fprintf( stderr, FILE_NOT_PROVIDED );
 		return -1;
 	}
-	const char*	file 		= argv[ 1 ];
-	JSON_FILE 				= fopen( file, "r" );
-	Node *parent 			= get_new_node( "/", NULL );
-	char space[ MAX_SPACE ]	;
+	const char*	file = argv[ 1 ];
+	JSON_FILE = fopen( file, "r" );
+    
+	if( !JSON_FILE ) return -1;
 	
-	if( !JSON_FILE )
-		return -1;
-	else{
-		recursivily_build( parent, 0b0000 );
-		traverse_tree( parent, space, 0 );
-		puts("\n*******************END*******************");
-	}
+	Node *parent = get_new_node( "/", NULL );
+	char space[ MAX_SPACE ];
+	
+	recursivily_build( parent, 0b0000 );
+	traverse_tree( parent, space, 0 );
+	
 	fclose( JSON_FILE );
 	free_entire_tree( parent );
 	return 0;
