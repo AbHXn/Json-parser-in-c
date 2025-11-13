@@ -55,6 +55,7 @@ typedef struct _node{
 }Node;
 
 static const char* FILE_NOT_PROVIDED	 = "Provide Json File\n";
+static const char* FILE_FAILED_OPEN		 = "Failed to open json File\n";
 static const char* TREE_ALLOC_ERROR 	 = "Failed in tree creation\n";
 static const char* BUFFER_LIMITED_ERROR  = "Buffer is full\n";
 static const char* KEY_VALUE_ALLOC_ERROR = "Failed to create key/value\n";
