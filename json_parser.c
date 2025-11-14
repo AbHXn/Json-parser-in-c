@@ -15,7 +15,7 @@ bool is_value_pair( int _flag ){
 		   !is_in_filling_mode	( _flag )
 		   );
 }
-bool safe_push( char *str, int* index, 
+void safe_push( char *str, int* index, 
 				char cchar, const size_t MAX_SIZE ){
 		if ( *index < MAX_SIZE - 1 )
 			str[(*index)++] = cchar;
