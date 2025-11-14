@@ -99,7 +99,7 @@ Node *get_new_node( const char *key, const char *value ){
 	if( value ){
 		nnode->value = (char *) malloc( strlen(value) + 1 );
 		strcpy( nnode->value, value );
-	}
+	} else nnode->value = NULL;
 	nnode->childrens = NULL;
 	return nnode;
 }
