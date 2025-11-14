@@ -352,8 +352,8 @@ void free_entire_tree( Node *root ){
 		children = next;
 	}
 
-	free( root->key  );
-	free( root->value);
+	if ( root->key ) free( root->key  );
+	if ( root->value ) free( root->value );
 	root->childrens = NULL;
 	free( root );
 }
