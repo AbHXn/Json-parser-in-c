@@ -15,6 +15,16 @@ bool is_value_pair( int _flag ){
 		   !is_in_filling_mode	( _flag )
 		   );
 }
+bool safe_push( char *str, int* index, 
+				char cchar, const size_t MAX_SIZE ){
+		if ( *index < MAX_SIZE - 1 )
+			str[(*index)++] = cchar;
+		else str[ *index ]= '\0';
+}
+void terminate_string( char *str, const int index ){
+	if( *( str  + index ) != '\0' )
+		*( str + index ) = '\0';
+}
 
 /**
  * Buffered character input and push functions.
@@ -202,56 +212,51 @@ void recursivily_build(Node *parent, int _flag){
 
 	while( ( c_char = _fgetc() ) != EOF ){
 		if( c_char == CLOSE_C || c_char == CLOSE_S ){
-			if( c_char == CLOSE_S ) 
-				c_char = COMMA;
+			if( c_char == CLOSE_S ) c_char = COMMA;
+			
 			int temp = _fgetc();
 			push_char_buffer( temp );
+			
 			if( temp != COMMA )
 				push_char_buffer( COMMA );
 			push_char_buffer( EOF ); 
+			
 			if(	is_key_filled( _flag ) && is_value_filling( _flag ) ){
-				_flag = turn_on_off(_flag, 
-							SOMETHING_INPUTING | VALUE_ENTERED);
-				value[ v_index ] = '\0';
+				_flag = turn_on_off(_flag, SOMETHING_INPUTING | VALUE_ENTERED);
+				terminate_string( value, v_index );
 			}
 		}
-		if(!is_json_syntax(c_char)){
+		if( !is_json_syntax(c_char) ){
 			if(isspace(c_char) && !is_in_filling_mode(_flag)) 
 				continue;
+
 			if( !is_in_filling_mode( _flag ) )
-				_flag = turn_on_off(_flag, SOMETHING_INPUTING);
-			if( !is_key_filled( _flag ) ){
-				if( k_index == MAX_KEY_SIZE - 1 )
-					key[ k_index ] = '\0';
-				else key[ k_index++ ] = c_char;
-			}
-			else if( !is_value_filled( _flag ) ){
-				if( v_index == MAX_VALUE_SIZE - 1 )
-					value[ v_index ] = '\0';
-				else value[ v_index++ ] = c_char;
-			}
+				_flag = turn_on_off( _flag, SOMETHING_INPUTING );
+			
+			if( !is_key_filled( _flag ) )
+				safe_push( key, &k_index, c_char, MAX_KEY_SIZE );
+			else if( !is_value_filled( _flag ) )
+				safe_push( value, &v_index, c_char, MAX_KEY_SIZE );
 		}
 		else if( c_char == APPO ){
 			if( !is_in_filling_mode( _flag ) )
 				_flag = turn_on_off(_flag, SOMETHING_INPUTING);
 			else{
 				if( !is_key_filled( _flag ) ){
-					_flag = turn_on_off(_flag, 
-							KEY_ENTERED | SOMETHING_INPUTING);
-					key[ k_index ] = '\0';
+					_flag = turn_on_off(
+						_flag, KEY_ENTERED | SOMETHING_INPUTING);
+					terminate_string( key, k_index );
 				}
 				else{
-					_flag = turn_on_off(_flag, 
-							VALUE_ENTERED | SOMETHING_INPUTING);
-					value[ v_index ] = '\0';
+					_flag = turn_on_off(
+						_flag, VALUE_ENTERED | SOMETHING_INPUTING);
+					terminate_string( value, v_index );
 				}
 			}
 		}
 		else if( is_json_syntax( c_char ) ){
 			if( c_char == SEMI && is_value_filling( _flag ) ){
-				if( v_index == MAX_VALUE_SIZE - 1 )
-					value[ v_index ] = '\0';
-				else value[ v_index++ ] = c_char;
+				safe_push( value, &v_index, c_char, MAX_KEY_SIZE );
 				continue;
 			}
 			if( c_char == OPEN_C ){
@@ -274,6 +279,7 @@ void recursivily_build(Node *parent, int _flag){
 					strcpy( key, "LIST" );
 				}
 				key_node = get_new_node( key, NULL );	
+				
 				if( !key_node )
 					push_char_buffer( EOF );
 				else{
@@ -286,8 +292,8 @@ void recursivily_build(Node *parent, int _flag){
 			else if( c_char == COMMA ){
 				if( is_in_filling_mode( _flag ) ){
 					_flag = turn_on_off(_flag, 
-								VALUE_ENTERED | SOMETHING_INPUTING);
-					value[ v_index ] = '\0';
+						VALUE_ENTERED | SOMETHING_INPUTING);
+					terminate_string( value, v_index );
 				}
 				if( node_to_push ){
 					add_child_to_parent( parent, node_to_push );
@@ -308,8 +314,10 @@ void recursivily_build(Node *parent, int _flag){
 		if( is_value_pair( _flag ) ){
 			if( is_list_filling( _flag ) && c_char != COMMA )
 				continue;
+
 			Node* new_node = get_new_node( key, value );
 			if( !new_node ) break;
+			
 			add_child_to_parent( parent, new_node );
 			k_index = v_index = 0;
 			_flag = ( is_list_filling( _flag ) ) ? 0b1001: 0b0000;
