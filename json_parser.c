@@ -1,30 +1,8 @@
 #include "json_parser.h"
 
-int 		BUFFER[BUFFER_SIZE];
-int 		buffer_ptr = -1;
-FILE* 		JSON_FILE = NULL;
-
-bool is_value_filling( int _flag ){
-	return !is_value_filled ( _flag ) && \
-			is_in_filling_mode	( _flag );
-}	
-bool is_value_pair( int _flag ){	
-	return (
-			is_key_filled	( _flag ) && 
-		   is_value_filled	( _flag ) && 
-		   !is_in_filling_mode	( _flag )
-		   );
-}
-void safe_push( char *str, int* index, 
-				char cchar, const size_t MAX_SIZE ){
-		if ( *index < MAX_SIZE - 1 )
-			str[(*index)++] = cchar;
-		else str[ *index ]= '\0';
-}
-void terminate_string( char *str, const int index ){
-	if( *( str  + index ) != '\0' )
-		*( str + index ) = '\0';
-}
+int 	BUFFER[BUFFER_SIZE];
+int 	buffer_ptr = -1;
+FILE*	JSON_FILE = NULL;
 
 /**
  * Buffered character input and push functions.
@@ -84,12 +62,12 @@ char _fgetc( void ){
 
 
 Node *get_new_node( const char *key, const char *value ){
-	Node *nnode = (Node *) malloc( sizeof( Node ) );
+	Node *nnode = (Node *) _malloc( sizeof( Node ) );
 	if( !nnode ){
 		fprintf( stderr, TREE_ALLOC_ERROR );
 		return NULL;
 	}
-	nnode->key = (char *) malloc( strlen(key) + 1 );
+	nnode->key = (char *) _malloc( strlen(key) + 1 );
 	if( !nnode->key ){
 		fprintf( stderr, KEY_VALUE_ALLOC_ERROR );
 		free( nnode );
@@ -97,9 +75,9 @@ Node *get_new_node( const char *key, const char *value ){
 	}
 	strcpy( nnode->key, key );
 	if( value ){
-		nnode->value = (char *) malloc( strlen(value) + 1 );
+		nnode->value = (char *) _malloc( strlen(value) + 1 );
 		strcpy( nnode->value, value );
-	} else nnode->value = NULL;
+	}
 	nnode->childrens = NULL;
 	return nnode;
 }
@@ -120,7 +98,7 @@ bool is_json_syntax( char c ){
 	Insertion at end (single linked list)
 */ 
 void add_child_to_parent( Node* parent, Node *child ){
-	ChD *new_child = (ChD *) malloc( sizeof(ChD) );
+	ChD *new_child = (ChD *) _malloc( sizeof(ChD) );
 	if( new_child == NULL ){
 		fprintf( stderr, TREE_ALLOC_ERROR );
 		return;
@@ -324,36 +302,4 @@ void recursivily_build(Node *parent, int _flag){
 		}
 		
 	}
-}
-
-/**
- * Recursively frees a tree of Nodes to prevent memory leaks.
- *
- * Traverses all child nodes and deallocates their memory, including:
- *   - the key and value strings,
- *   - child nodes,
- *   - and the linked list of children.
- *
- * @param root Pointer to the root Node of the tree to free.
- *
- * Notes:
- * - Safe to call with NULL (does nothing).
- * - After execution, all memory associated with the tree is released.
- */
-
-void free_entire_tree( Node *root ){
-	if( !root ) return;
-
-	ChD* children = root->childrens;
-	while( children ){
-		ChD *next = children->next;
-		free_entire_tree( children->child );
-		free( children );
-		children = next;
-	}
-
-	if ( root->key ) free( root->key  );
-	if ( root->value ) free( root->value );
-	root->childrens = NULL;
-	free( root );
 }
