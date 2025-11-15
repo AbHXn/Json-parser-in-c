@@ -49,6 +49,6 @@ int main( int argc, char *argv[] ){
 	traverse_tree( parent, space, 0 );
 
 	fclose( JSON_FILE );
-	free_entire_tree( parent );
+	free_memory();
 	return 0;
 }
